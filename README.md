@@ -1,4 +1,4 @@
-# AI Communication Scorer
+# AI Introduction Scorer
 
 An automated tool to analyze and score student introductions based on the Nirmaan AI Case Study rubrics.
 This project uses **RAG (Retrieval-Augmented Generation)** and **HyDE (Hypothetical Document Embeddings)** to evaluate semantic quality, alongside rule-based logic for quantitative metrics.
