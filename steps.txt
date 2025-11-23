@@ -1,0 +1,6 @@
+Steps to run the Automated Scoring Tool:
+Install dependencies: pip install -r requirements.txt 
+Prepare your transcript JSON with "text" and "metadata" (word_count).
+Run the scorer: python compliant_scorer.py (modify example_text or call evaluate()).
+Review the printed report and final score (out of 100).
+Optional: edit CSV_RUBRIC in compliant_scorer.py or integrate evaluate() into other apps.

@@ -23,7 +23,7 @@ except Exception as e:
     MODEL_READY = False
 
 # ---------------------------------------------------------------------------
-# CSV‑style rubric (same structure you supplied)
+# CSV‑style rubric (Generalized for all ages)
 # ---------------------------------------------------------------------------
 CSV_RUBRIC: Dict[str, Dict[str, Any]] = {
     "Content & Structure": {
@@ -35,14 +35,14 @@ CSV_RUBRIC: Dict[str, Dict[str, Any]] = {
             },
             "Keyword Presence": {
                 "weight": 30,
-                "keywords": ["name", "age", "class", "school", "family", "hobbies", "goals", "challenge", "unique point"]
+                "keywords": ["name", "age", "education", "profession", "family", "hobbies", "goals", "challenge", "unique point"]
             },
             "Flow & Tone (Composite)": {
                 "weight": 5,
                 "sub_metrics": {
                     "A. Cohesion Markers": {
                         "weight": 2.0,
-                        "markers": ["first", "second", "third", "finally", "to detail my interests", "however"]
+                        "markers": ["first", "second", "third", "finally", "to elaborate", "however"]
                     },
                     "B. Sentiment Polarity": {
                         "weight": 2.0,
@@ -164,6 +164,20 @@ def score_clarity(transcript: Dict[str, Any]) -> Tuple[float, Dict[str, Any]]:
     score = band_score(filler_rate, CSV_RUBRIC["Clarity"]["bands"])
     return score, {"Clarity Score": {"score": score, "feedback": f"{filler_cnt} fillers → {filler_rate:.2f}%"}}
 
+def semantic_score(query: str, sentences: List[str]) -> float:
+    """Return the highest cosine similarity between *query* and any sentence.
+    Uses the global `MODEL`.
+    """
+    if not MODEL_READY:
+        return 0.0
+    query_emb = MODEL.encode([query], convert_to_tensor=True)[0]
+    sent_emb = MODEL.encode(sentences, convert_to_tensor=True)
+    q = query_emb.cpu().numpy()
+    s = sent_emb.cpu().numpy()
+    q_norm = q / np.linalg.norm(q) if np.linalg.norm(q) else q
+    s_norm = s / np.linalg.norm(s, axis=1, keepdims=True)
+    sims = np.dot(s_norm, q_norm)
+    return float(np.max(sims))
 
 def score_content_structure(transcript: Dict[str, Any]) -> Tuple[float, Dict[str, Any]]:
     """Score Content & Structure using semantic similarity and proportional Flow/Tone."""
@@ -244,11 +258,11 @@ def evaluate(transcript: Dict[str, Any]) -> Tuple[float, str]:
 # Demo / CLI
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    example_text = """Hello everyone, and thank you for this opportunity. I am Alex Sharma, and I am currently studying in the 10th standard at Brightwood High School. My mandatory details include being 15 years old, and I reside with my parents and two siblings. Our family is known for its strong emphasis on community service.
+    example_text = """Hello everyone, and thank you for this opportunity. I am Alex Sharma, a software engineer with over 5 years of experience in full-stack development. I currently work at TechSolutions Inc., where I lead a team of developers. My background includes a Master's degree in Computer Science.
 
-To detail my interests, I have a keen passion for robotics and spend most of my weekends working on circuits. My future academic and professional goals are distinct and measurable: First, I aim to secure a top rank in the national science Olympiad this coming year. Second, I plan to successfully lead the school's robotics club to the regional finals. Third, my long‑term goal is to pursue a career in sustainable engineering.
+To elaborate on my interests, I have a keen passion for open-source projects and spend my weekends contributing to community repositories. My professional goals are distinct: First, I aim to architect scalable solutions for enterprise clients. Second, I plan to successfully mentor junior developers to help them grow. Third, my long-term goal is to become a CTO.
 
-However, I foresee one specific challenge this year, which is managing my time effectively between competitive athletics and my rigorous academic schedule. Finally, I will close by saying thank you for your attention and time today."""
+However, I foresee a challenge in balancing technical leadership with hands-on coding. Finally, I will close by saying thank you for your time."""
     transcript = {
         "text": example_text,
         "metadata": {"word_count": len(re.findall(r"\b\w+\b", example_text))},

@@ -81,17 +81,35 @@ with col_summary:
 if analyze_btn and transcript_input:
     scorer = RealAutomatedScorer(transcript_input, RUBRIC_CRITERIA)
     
-    # --- 1. Anomaly Check ---
+    # --- 1. Advanced Anomaly Check ---
     anomalies = scorer.detect_anomalies()
     if anomalies:
-        st.error(f"🚨 **{len(anomalies)} Anomaly Detected**")
-        for a in anomalies:
-            st.markdown(f"""
-            <div style="padding: 10px; background-color: #3d1818; border-left: 4px solid #ff4b4b; margin-bottom: 10px;">
-                <strong>{a['name']}</strong><br>
-                <span style="font-size: 12px; color: #ffbaba;">{a['description']}</span>
-            </div>
-            """, unsafe_allow_html=True)
+        # Separate by severity
+        critical = [a for a in anomalies if a.get('severity') == 'critical']
+        warnings = [a for a in anomalies if a.get('severity') == 'warning']
+        
+        if critical:
+            st.error(f"🚨 **{len(critical)} Critical Issue(s) Detected**")
+            for a in critical:
+                st.markdown(f"""
+                <div style="padding: 10px; background-color: #3d1818; border-left: 4px solid #ff4b4b; margin-bottom: 10px;">
+                    <strong>{a['name']}</strong><br>
+                    <span style="font-size: 12px; color: #ffbaba;">{a['description']}</span><br>
+                    <span style="font-size: 11px; color: #ff8888;">Confidence: {a['confidence']:.1%}</span>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        if warnings:
+            st.warning(f"⚠️ **{len(warnings)} Warning(s)**")
+            for a in warnings:
+                st.markdown(f"""
+                <div style="padding: 10px; background-color: #3d2e18; border-left: 4px solid #ffa500; margin-bottom: 10px;">
+                    <strong>{a['name']}</strong><br>
+                    <span style="font-size: 12px; color: #ffd699;">{a['description']}</span><br>
+                    <span style="font-size: 11px; color: #ffcc88;">Confidence: {a['confidence']:.1%}</span>
+                </div>
+                """, unsafe_allow_html=True)
+    
     
     # --- 2. Scoring Loop ---
     total_weighted_score = 0

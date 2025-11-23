@@ -63,8 +63,8 @@ RUBRIC_CRITERIA = [
     {
         "id": "content_structure",
         "name": "Content & Structure",
-        "description": "The student introduces themselves clearly, mentioning their name, age, school, family, hobbies, and goals.",
-        "hyde_proxy": "Hello, my name is Muskan. I am 13 years old and I study at Christ Public School. I live with my family. My hobbies are playing cricket and reading. My goal is to become a scientist. Thank you.",
+        "description": "The speaker introduces themselves clearly, mentioning their name, background (education/profession), family, interests, and goals.",
+        "hyde_proxy": "Hello, my name is [Name]. I am a [Profession/Student] with a background in [Field]. I live with my family. My interests include [Hobbies] and my goal is to [Goal]. Thank you.",
         "type": "semantic",
         "weight": 40
     },
@@ -72,7 +72,7 @@ RUBRIC_CRITERIA = [
         "id": "grammar_vocab",
         "name": "Language & Grammar",
         "description": "The speech uses diverse vocabulary and correct grammar without frequent errors.",
-        "hyde_proxy": "I enjoy studying science because it helps me understand the world. My family is very kind and supports me in everything I do. I have a strong command of English.",
+        "hyde_proxy": "I am passionate about my work and studies because they allow me to make an impact. My background has provided me with a strong foundation. I articulate my thoughts clearly and effectively.",
         "type": "semantic",
         "weight": 20
     },
@@ -86,20 +86,29 @@ RUBRIC_CRITERIA = [
     }
 ]
 
-# --- Anomaly Detection Configuration ---
-# Checks for content that is inconsistent with the expected persona (Student).
+# --- Anomaly Detection Configuration (Advanced & Humane) ---
+# Context-aware checks with severity levels for student introductions
 ANOMALY_CRITERIA = [
     {
-        "name": "Professional Experience Mismatch",
-        "description": "Claims of significant work experience or corporate roles which contradict a student persona.",
-        "hyde_proxy": "I have 10 years of professional work experience managing large teams and delivering corporate projects.",
-        "threshold": 0.45 
+        "name": "Excessive Professional Claims",
+        "description": "Claims of extensive corporate work experience (10+ years, C-level positions) that contradict student context.",
+        "hyde_proxy": "I have been working as a Chief Executive Officer for over 15 years, managing Fortune 500 companies and leading global corporate strategy.",
+        "threshold": 0.60,  # Higher threshold - only flag very strong matches
+        "severity": "critical"
     },
     {
-        "name": "Unrealistic Qualifications",
-        "description": "Claims of advanced degrees (PhD, Masters) unlikely for a school student.",
-        "hyde_proxy": "I hold a PhD and a Master's degree in Computer Science and have published multiple research papers.",
-        "threshold": 0.45
+        "name": "Advanced Academic Credentials",
+        "description": "Claims of multiple advanced degrees (PhD, multiple Masters) highly unlikely for school students.",
+        "hyde_proxy": "I hold three PhD degrees and five Master's degrees from prestigious universities. I have published over 100 research papers in top journals.",
+        "threshold": 0.65,  # Very high threshold
+        "severity": "warning"
+    },
+    {
+        "name": "Age-Experience Mismatch",
+        "description": "Combination of young age with decades of professional experience.",
+        "hyde_proxy": "I am 14 years old and I have 25 years of professional work experience in multiple industries.",
+        "threshold": 0.70,  # Extremely high threshold - only obvious contradictions
+        "severity": "critical"
     }
 ]
 
@@ -151,17 +160,20 @@ class RealAutomatedScorer:
 
     def detect_anomalies(self) -> List[Dict]:
         """
-        Checks the transcript against ANOMALY_CRITERIA to find inconsistencies.
+        Advanced anomaly detection with severity levels.
+        Only flags obvious contradictions with high confidence thresholds.
         """
         anomalies = []
         for anomaly in ANOMALY_CRITERIA:
             similarity = self.calculate_semantic_similarity(anomaly)
             if similarity > anomaly['threshold']:
+                severity = anomaly.get('severity', 'warning')
                 anomalies.append({
                     "name": anomaly['name'],
                     "description": anomaly['description'],
                     "confidence": similarity,
-                    "msg": f"DETECTED (Similarity: {similarity:.2f} > {anomaly['threshold']})"
+                    "severity": severity,
+                    "msg": f"{severity.upper()}: {anomaly['description']} (Confidence: {similarity:.2%})"
                 })
         return anomalies
 
